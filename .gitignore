@@ -1,0 +1,14 @@
+# npm stuff
+node_modules
+*.log
+
+# built files
+dist
+ideas.md
+todos.md
+
+# OS junk
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes

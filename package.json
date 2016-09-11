@@ -1,0 +1,48 @@
+{
+  "name": "funcss",
+  "description": "Functional Style Sheets",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arturmuller/funcss.git"
+  },
+  "bugs": {
+    "url": "https://github.com/arturmuller/funcss/issues"
+  },
+  "homepage": "https://github.com/arturmuller/funcss",
+  "author": "Artur Muller <me@arturmuller.com> (http://arturmuller.com)",
+  "license": "ISC",
+  "keywords": [
+    "css",
+    "functional",
+    "stylesheet",
+    "style"
+  ],
+  "main": "dist/index.js",
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "babel source -d dist --ignore *.test.js",
+    "build:watch": "nodemon -w source -x \"npm run build\"",
+    "test": "ava -r babel-register source/**/*.test.js",
+    "test:watch": "ava -w -r babel-register source/**/*.test.js",
+    "prepublish": "npm run clean && npm run build",
+    "lint": "eslint source"
+  },
+  "devDependencies": {
+    "ava": "^0.16.0",
+    "babel-cli": "^6.14.0",
+    "babel-core": "^6.10.4",
+    "babel-eslint": "^6.1.2",
+    "babel-preset-es2015": "^6.9.0",
+    "babel-preset-stage-2": "^6.11.0",
+    "babel-register": "^6.11.6",
+    "eslint": "^3.1.0",
+    "eslint-config-lusk": "^0.1.0",
+    "rimraf": "^2.5.4"
+  },
+  "dependencies": {
+    "common-tags": "^1.3.1",
+    "flat": "^2.0.1",
+    "ramda": "^0.21.0"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "extends": "lusk",
+  "parser": "babel-eslint",
+  "env": {
+    "browser": true,
+  },
+  "rules": {
+    "no-multiple-empty-lines": ["warn", {"max": 2}],
+    "object-curly-spacing": ["warn", "never"],
+    "array-bracket-spacing": ["warn", "never"],
+    "semi": ["warn", "never"],
+    "quotes": ["warn", "double"],
+  }
+}
