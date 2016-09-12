@@ -36,12 +36,12 @@
     "babel-preset-es2015": "^6.9.0",
     "babel-preset-stage-2": "^6.11.0",
     "babel-register": "^6.11.6",
-    "eslint": "^3.1.0",
+    "common-tags": "^1.3.1",
     "eslint-config-lusk": "^0.1.0",
+    "eslint": "^3.1.0",
     "rimraf": "^2.5.4"
   },
   "dependencies": {
-    "common-tags": "^1.3.1",
     "ramda": "^0.21.0"
   }
 }
