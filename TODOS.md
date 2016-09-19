@@ -3,7 +3,7 @@
 - [x] Rules
 - [x] Getter functions
 - [x] Injection
-- [ ] Media
-- [ ] Pseudo
+- [x] Media
+- [x] Pseudo
 - [ ] Autoprefixing
 - [ ] Hashing

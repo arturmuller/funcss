@@ -1,38 +1,123 @@
+/* eslint-disable no-console */
+/* global process */
+
 import Ramda from "ramda"
+import oneLineTrim from "common-tags/lib/oneLineTrim"
+
 
 /**
- * Transform {key: value} object pairs into [key, value] tuples
- * @param {object} object - The object to process
- * @returns {array}
+ * Strip "@"s and ":"s from a string
  */
 
-export const objToTuples = (obj) =>
-  Ramda.map((key) => [key, obj[key]], Ramda.keys(obj))
+const strip = Ramda.replace(/[@:]/g, "")
+
 
 /**
- * Generate a flat list of [selector, declaration, value] tuples
- * @param {object} rules - The rules object to process
- * @returns {array}
+ * Strip "@"s and ":"s from a string
  */
 
-export const preprocessRules = Ramda.compose(
-  Ramda.unnest,
-  Ramda.map(([declaration, rule]) =>
-    Ramda.map(([key, value]) =>
-      [`.${declaration}--${key}`, declaration, value], objToTuples(rule))),
-  objToTuples
+export const renderClassName = Ramda.compose(
+  Ramda.join("--"),
+  Ramda.map(strip)
 )
 
+
 /**
- * Generate CSS string
- * @param {object} rules - The rules object to process
+ * Generate CSS for single rule
+ */
+
+const rulesReducer = Ramda.curry((declaration, makeSelector, accum, rule) => {
+  const key = rule[0]
+  const value = rule[1] || key
+
+  const ruleCSS = oneLineTrim`
+    .${makeSelector(declaration, key)}{
+      ${declaration}:${value}
+    }`
+
+  return Ramda.concat(accum, ruleCSS)
+})
+
+
+/**
+ * Generate CSS for pseudo class/element
+ */
+
+const pseudoReducer = Ramda.curry((declaration, rules, accum, pseudo) => {
+
+  const pseudoCSS = Ramda.reduce(
+    rulesReducer(declaration, (dec, rule) => `${dec}--${rule}--${strip(pseudo)}${pseudo}`),
+    "",
+    rules
+  )
+
+  return Ramda.concat(accum, pseudoCSS)
+})
+
+
+/**
+ * Generates CSS for a media query
+ */
+
+const mediaQueryReducer = Ramda.curry((declaration, rules, accum, [mediaKey, query]) => {
+
+  const rulesCSS = Ramda.reduce(
+    rulesReducer(declaration, (dec, rule) => `${dec}--${rule}--${strip(mediaKey)}`),
+    "",
+    rules
+  )
+
+  const mediaQueryCSS = oneLineTrim`
+    @media ${query}{
+      ${rulesCSS}
+    }`
+
+  return Ramda.concat(accum, mediaQueryCSS)
+})
+
+
+/**
+ * Generate CSS for a signle definition
+ */
+
+const definitionReducer = (accum, [declaration, {rules, media, pseudo}]) => {
+
+  const vanillaRulesCSS = Ramda.reduce(
+    rulesReducer(declaration, (dec, rule) => `${dec}--${rule}`),
+    "",
+    rules
+  )
+
+  const pseudoCSS = Ramda.reduce(
+    pseudoReducer(declaration, rules),
+    "",
+    pseudo || []
+  )
+
+  const mediaQueryRulesCSS = Ramda.reduce(
+    mediaQueryReducer(declaration, rules),
+    "",
+    media || []
+  )
+
+  return `${accum}${vanillaRulesCSS}${pseudoCSS}${mediaQueryRulesCSS}`
+}
+
+
+/**
+ * Generate CSS markup
+ * @param {object} config
  * @returns {string}
  */
 
-export const generateCSS = (config) => {
-  const rules = preprocessRules(config.rules)
-  return Ramda.reduce((acc, [selector, declaration, value]) =>
-    `${acc}${selector} {${declaration}: ${value};}`, "", rules)
+export const generateCSS = (config, options = {}) => {
+  const css = Ramda.reduce(
+    definitionReducer,
+    "",
+    config
+  )
+
+  return `${options.globals || ""}${css}`
 }
 
 /**
@@ -49,49 +134,76 @@ export const inject = (css) => {
   document.head.appendChild(style)
 }
 
+
 /**
  * Convert kebab-case to camelCase
- * @param {string}
- * @returns {string}
  */
 
 export const camelCase = (string) =>
   Ramda.replace(/-([a-z])/g, (_, match) => Ramda.toUpper(match), string)
 
+
 /**
  * Retrieve classname from config
- * @param {object} config
- * @param {string} rule
- * @param {string} key
- * @returns {string} classname
  */
 
-export const getter = Ramda.curry((config, rule, key) => {
-  if (config.rules[rule][key]) {
-    return `${rule}--${key}`
-  } else {
-    console.error(`Couldn't find '${key}' for '${rule}' rule.`)
-    return null
+export const getter = ([def, {rules, media, pseudo}]) => (...args) => {
+  const [key, arg] = args
+
+  // This is a convenience for being able to call the getter function with
+  // arguments but without generating no output.
+  // This is useful when passing props directly
+  if (key === null) return null
+
+  if (process.env.NODE_ENV !== "production") {
+    if (!Ramda.find(Ramda.propEq(0, key), rules)) {
+      return console.error(`Couldn't find '${key}' key for '${def}' definition.`)
+    }
+
+    if (arg) {
+      const isPseudo = arg.startsWith(":")
+      const isMedia = arg.startsWith("@")
+
+      if (isMedia && !Ramda.find(Ramda.propEq(0, arg), media)) {
+        return console.error(`Couldn't find '${media}' media query for '${def}' definition.`)
+      }
+
+      if (isPseudo && !Ramda.find(Ramda.equals(arg), pseudo)) {
+        return console.error(`Couldn't find '${pseudo}' psedo class/element for '${def}' definition.`)
+      }
+    }
+
   }
-})
+
+  return renderClassName([def, ...args])
+}
+
 
 /**
- * Retrieve getters
- * @param {object} config
- * @returns {object} getters
+ * Create getter functions
  */
 
-export const generateGetters = (config) =>
-  Ramda.reduce((acc, rule) =>
-    Ramda.assoc(camelCase(rule), getter(config, rule), acc), {}, Ramda.keys(config.rules))
+export const generateGetters = (defs) =>
+  Ramda.reduce((acc, def) =>
+    Ramda.assoc(camelCase(def[0]), getter(def), acc), {}, defs)
+
+
+/**
+ * Generate CSS and getter functions
+ */
+
+export const generate = (config, options) => ({
+  css: generateCSS(config, options),
+  getters: generateGetters(config),
+})
+
 
 /**
  * Main
- * @param {object} config
- * @returns {object} getters
  */
 
-export default (config) => {
-  inject(generateCSS(config))
-  return generateGetters(config)
+export default (config, options) => {
+  const {css, getters} = generate(config, options)
+  inject(css)
+  return getters
 }
