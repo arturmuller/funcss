@@ -1,12 +1,31 @@
 # Functional Style Sheets
 
-## Install
+[![npm](https://img.shields.io/npm/v/funcss.svg?maxAge=2592000)](https://www.npmjs.com/package/funcss)
+
+Functional Style Sheets let you easily generate functional CSS — similar to [Tachyons](http://tachyons.io) or [Basscss](http://basscss.com) — based on **your exact requirements**.
+
+Additionally, functional utilities are provided, guarding against using undefined classes.
+
+Basically, you end up writing something that almost looks like inline styles, but *with native support for media queries and pseudo classes & elements*, and very performant.
+
+Styles can be injected and generated on client  to reduce payload size or generated on the server and used like any other regular CSS.
+
+Functional Style Sheets can be used with any framework (React, Angular, whatever...) and are independent of build system.
+
+
+## Usage
+
+
+### Step 1: Install
 
 ```
 npm install --save funcss
 ```
 
-## Usage
+
+### Step 2: Specify Definitions
+
+First off, you need to specify your rule definitions:
 
 ```js
 // Create a module like this, and import it somewhere early
@@ -14,68 +33,75 @@ npm install --save funcss
 
 import funcss from 'funcss'
 
-const rules = {
-  "padding": {
-    "small": "1rem",
-    "medium": "3rem",
-    "large": "5rem",
+const defs = [[
+  "background-color", {
+    "rules": [
+      ["blue", "#4996f2"],
+      ["dark-blue", "#428ae0"],
+    ],
+    "media": [
+      ["@narrow", "(min-width:20rem)"],
+      ["@wide", "(min-width:40rem)"],
+    ],
+    "pseudo": [
+      ":hover",
+      "::placeholder",
+    ],
   },
-  "color": {
-    "red": "#ab1c4a",
-    "green": "#258819",
-    "blue": "#194088",
-  },
-  "font-family": {
-    "source-sans-pro": "'Source Sans Pro', sans-serif"
-    "gloria-hallelujah": "'Gloria Hallelujah', cursive"
-  },
-}
+]]
 
-const media = {
-  "@narrow": "(min-width: 20em)",
-  "@wide": "(min-width: 40em)",
-}
-
-const pseudo = {
-  color: [ ":hover", "::first-letter" ],
-}
-
-const stylesheet = funcss({rules, media, pseudo})
+const stylesheet = funcss(defs)
 
 export default stylesheet
 ```
 
-This will generate and inject styles into the `<head>` of the page.
+<!-- _If you're wondering why arrays are used instead of objects, it is because source order for CSS matters, and objects don't guarantee iteration order._ -->
 
-Now, you can import the `stylesheet` object, which contains functions matching the rules object you provided.
+The default export from `funcss` will inject generated stylesheet into the `<head>` of the document and return an object with methods matching your defs.
 
-Note that function names are camelCased to make it more user-friendly to access inside JS.
+In the above example, the `stylesheet` object would include one method — `backgroundColor` — which can be used to retrieve the right class name, which can be subsequently used inside your components.
 
-You can use it as follows:
+Note that methods are camelCased so that you can access them in JS using the dot notation.
+
+### Step 3: Use Stylesheet Methods to Retrieve Class Names in Components
+
+Usage in a React component looks like this:
 
 ```js
 import React from "react"
-import c from "classnames"
-import s from "./stylesheet"
+import cn from "classnames"
+import ss from "./stylesheet"
 
-const FancyButton = ({label}) => (
-  <button className={c(
-      s.padding("small"),
-      s.backgroundColor("blue"),
-      s.backgroundColor("green", ":hover"),
+const FancyButton = (props) => (
+  <button className={cn(
+      ss.backgroundColor("blue"),
+      ss.backgroundColor("dark-blue", ":hover"),
     )}>
-    {label}
+    {props.label}
   </button>
 )
 ```
 
-_Note that this example uses React, but since these functions just return strings, there is no limit on where this can be used..._
+The stylesheet methods take one or two arguments. The first argument should be one the rules you have defined for this definition (in this case `"blue"` or `"dark-blue"`), and the second, optional argument is either a media query name (`"@narrow"`, `"@wide"`), or a pseudo selector (`:hover`).
 
-One very cool thing is that these accessor functions let you know if you try to get something which hasn't been defined in your config.
+So `ss.backgroundColor("blue")` will return the correct CSS class name (simple string) based on your arguments, but will also let you know if you try to get things which you haven't defined previously.
 
-Additionally, since we are dealing with totally vanilla CSS here (and those classnames are just regular strings), you can use any other CSS solution to handle edge-cases like relatively positioning an element to optically align it ,etc...
+For example, `ss.backgroundColor("foo")` will helpfully print "Couldn't find 'foo' key for 'background-color' definition." to the console.
 
-## Influences
+_Note that since we are dealing with totally vanilla CSS here (and those classnames are just regular strings), you can use any other styling solution — regular CSS, CSS Modules, inline styles — to handle edge-cases like relatively positioning an element to optically align it, etc..._
+
+### Server-side Usage
+
+To use on the server, use the `generate` secondary export (`import {generate} from 'funcss'`) instead of the default.
+
+The `generate` functions returns an object with `css` and `getters` properties without trying to inject anything anywhere, so you can use it safely on the server and do what you will with the output.
+
+## Further Reading
+
+- http://www.jon.gold/2015/07/functional-css/
+- https://github.com/chibicode/react-functional-css-protips
+
+## Influences & Inspiration
 
 - [Tachyons](http://tachyons.io/)
 - [Basscss](http://www.basscss.com/)
