@@ -1,25 +1,24 @@
 import test from "ava"
 import {generateCSS} from "./index"
-import {generateGetters} from "./index"
+import {generateStylesheet} from "./index"
 import oneLineTrim from "common-tags/lib/oneLineTrim"
 
-const config = [[
-  "background-color", {
-    "rules": [
-      ["red", "#ff4b5b"],
-      ["green", "#00d4a8"],
-      ["blue", "#4996f2"],
-    ],
-    "pseudo": [
-      ":hover",
-      "::placeholder",
-    ],
-    "media": [
-      ["@narrow", "(min-width:20rem)"],
-      ["@wide", "(min-width:40rem)"],
-    ],
-  },
-]]
+const defs = [{
+  name: "background-color",
+  rules: [
+    ["red", "#ff4b5b"],
+    ["green", "#00d4a8"],
+    ["blue", "#4996f2"],
+  ],
+  pseudo: [
+    ":hover",
+    "::placeholder",
+  ],
+  media: [
+    ["@narrow", "(min-width:20rem)"],
+    ["@wide", "(min-width:40rem)"],
+  ],
+}]
 
 test("generateCSS", (t) => {
   const expected = oneLineTrim`
@@ -48,15 +47,15 @@ test("generateCSS", (t) => {
     }
   `
 
-  const css = generateCSS(config)
+  const css = generateCSS(defs)
   t.is(css, expected)
 })
 
-test("generateGetters", (t) => {
-  const getters = generateGetters(config)
-  t.is(getters.backgroundColor("red"), "background-color--red")
-  t.is(getters.backgroundColor("red", "@narrow"), "background-color--red--narrow")
-  t.is(getters.backgroundColor("red", ":hover"), "background-color--red--hover")
+test("generateStylesheet", (t) => {
+  const stylesheet = generateStylesheet(defs)
+  t.is(stylesheet.backgroundColor("red"), "background-color--red")
+  t.is(stylesheet.backgroundColor("red", "@narrow"), "background-color--red--narrow")
+  t.is(stylesheet.backgroundColor("red", ":hover"), "background-color--red--hover")
 })
 
 test.todo("inject")

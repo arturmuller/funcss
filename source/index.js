@@ -2,8 +2,6 @@
 /* global process */
 
 import Ramda from "ramda"
-import oneLineTrim from "common-tags/lib/oneLineTrim"
-
 
 /**
  * Strip "@"s and ":"s from a string
@@ -26,76 +24,70 @@ export const renderClassName = Ramda.compose(
  * Generate CSS for single rule
  */
 
-const rulesReducer = Ramda.curry((declaration, makeSelector, accum, rule) => {
+const rulesReducer = (name, makeSelector) => (accum, rule) => {
   const key = rule[0]
   const value = rule[1] || key
 
-  const ruleCSS = oneLineTrim`
-    .${makeSelector(declaration, key)}{
-      ${declaration}:${value}
-    }`
+  const ruleCSS = `.${makeSelector(name, key)}{${name}:${value}}`
 
   return Ramda.concat(accum, ruleCSS)
-})
+}
 
 
 /**
  * Generate CSS for pseudo class/element
  */
 
-const pseudoReducer = Ramda.curry((declaration, rules, accum, pseudo) => {
+const pseudoReducer = (name, rules) => (accum, pseudo) => {
 
   const pseudoCSS = Ramda.reduce(
-    rulesReducer(declaration, (dec, rule) => `${dec}--${rule}--${strip(pseudo)}${pseudo}`),
+    rulesReducer(name, (dec, rule) => `${dec}--${rule}--${strip(pseudo)}${pseudo}`),
     "",
     rules
   )
 
   return Ramda.concat(accum, pseudoCSS)
-})
+}
 
 
 /**
  * Generates CSS for a media query
  */
 
-const mediaQueryReducer = Ramda.curry((declaration, rules, accum, [mediaKey, query]) => {
+const mediaQueryReducer = (name, rules) => (accum, [mediaKey, query]) => {
 
   const rulesCSS = Ramda.reduce(
-    rulesReducer(declaration, (dec, rule) => `${dec}--${rule}--${strip(mediaKey)}`),
+    rulesReducer(name, (dec, rule) => `${dec}--${rule}--${strip(mediaKey)}`),
     "",
     rules
   )
 
-  const mediaQueryCSS = oneLineTrim`
-    @media ${query}{
-      ${rulesCSS}
-    }`
+  const mediaQueryCSS = `@media ${query}{${rulesCSS}}`
 
   return Ramda.concat(accum, mediaQueryCSS)
-})
+}
 
 
 /**
- * Generate CSS for a signle definition
+ * Generate CSS for a single definition
  */
 
-const definitionReducer = (accum, [declaration, {rules, media, pseudo}]) => {
+const definitionReducer = (accum, {name, rules, media, pseudo}) => {
 
   const vanillaRulesCSS = Ramda.reduce(
-    rulesReducer(declaration, (dec, rule) => `${dec}--${rule}`),
+    rulesReducer(name, (dec, rule) => `${dec}--${rule}`),
     "",
     rules
   )
 
   const pseudoCSS = Ramda.reduce(
-    pseudoReducer(declaration, rules),
+    pseudoReducer(name, rules),
     "",
     pseudo || []
   )
 
   const mediaQueryRulesCSS = Ramda.reduce(
-    mediaQueryReducer(declaration, rules),
+    mediaQueryReducer(name, rules),
     "",
     media || []
   )
@@ -110,11 +102,11 @@ const definitionReducer = (accum, [declaration, {rules, media, pseudo}]) => {
  * @returns {string}
  */
 
-export const generateCSS = (config, options = {}) => {
+export const generateCSS = (defs, options = {}) => {
   const css = Ramda.reduce(
     definitionReducer,
     "",
-    config
+    defs
   )
 
   return `${options.globals || ""}${css}`
@@ -147,7 +139,7 @@ export const camelCase = (string) =>
  * Retrieve classname from config
  */
 
-export const getter = ([def, {rules, media, pseudo}]) => (...args) => {
+export const styleGetter = ({name, rules, media, pseudo}) => (...args) => {
   const [key, arg] = args
 
   // This is a convenience for being able to call the getter function with
@@ -157,7 +149,7 @@ export const getter = ([def, {rules, media, pseudo}]) => (...args) => {
 
   if (process.env.NODE_ENV !== "production") {
     if (!Ramda.find(Ramda.propEq(0, key), rules)) {
-      return console.error(`Couldn't find '${key}' key for '${def}' definition.`)
+      return console.error(`Couldn't find '${key}' key for '${name}' definition.`)
     }
 
     if (arg) {
@@ -165,36 +157,36 @@ export const getter = ([def, {rules, media, pseudo}]) => (...args) => {
       const isMedia = arg.startsWith("@")
 
       if (isMedia && !Ramda.find(Ramda.propEq(0, arg), media)) {
-        return console.error(`Couldn't find '${media}' media query for '${def}' definition.`)
+        return console.error(`Couldn't find '${media}' media query for '${name}' definition.`)
       }
 
       if (isPseudo && !Ramda.find(Ramda.equals(arg), pseudo)) {
-        return console.error(`Couldn't find '${pseudo}' psedo class/element for '${def}' definition.`)
+        return console.error(`Couldn't find '${pseudo}' psedo class/element for '${name}' definition.`)
       }
     }
 
   }
 
-  return renderClassName([def, ...args])
+  return renderClassName([name, ...args])
 }
 
 
 /**
- * Create getter functions
+ * Create stylesheet object
  */
 
-export const generateGetters = (defs) =>
+export const generateStylesheet = (defs) =>
   Ramda.reduce((acc, def) =>
-    Ramda.assoc(camelCase(def[0]), getter(def), acc), {}, defs)
+    Ramda.assoc(camelCase(def.name), styleGetter(def), acc), {}, defs)
 
 
 /**
- * Generate CSS and getter functions
+ * Generate CSS string and stylesheet object
  */
 
 export const generate = (config, options) => ({
   css: generateCSS(config, options),
-  getters: generateGetters(config),
+  stylesheet: generateStylesheet(config),
 })
 
 
@@ -203,7 +195,7 @@ export const generate = (config, options) => ({
  */
 
 export default (config, options) => {
-  const {css, getters} = generate(config, options)
+  const {css, stylesheet} = generate(config, options)
   inject(css)
-  return getters
+  return stylesheet
 }
