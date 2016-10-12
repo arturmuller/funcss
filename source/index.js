@@ -11,12 +11,13 @@ const strip = Ramda.replace(/[@:]/g, "")
 
 
 /**
- * Strip "@"s and ":"s from a string
+ * Render class name from array of strings (`null` and `undefined` are ignored)
  */
 
 export const renderClassName = Ramda.compose(
   Ramda.join("--"),
-  Ramda.map(strip)
+  Ramda.map(strip),
+  Ramda.reject(Ramda.isNil)
 )
 
 
