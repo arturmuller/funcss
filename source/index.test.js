@@ -58,6 +58,10 @@ test("generateStylesheet", (t) => {
   t.is(stylesheet.backgroundColor("red", ":hover"), "background-color--red--hover")
   t.is(stylesheet.backgroundColor("red", undefined), "background-color--red")
   t.is(stylesheet.backgroundColor("red", null), "background-color--red")
+  t.is(stylesheet.backgroundColor("red", false), "background-color--red")
+  t.is(stylesheet.backgroundColor(undefined), null)
+  t.is(stylesheet.backgroundColor(null), null)
+  t.is(stylesheet.backgroundColor(false), null)
 })
 
 test.todo("inject")

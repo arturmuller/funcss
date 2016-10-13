@@ -17,7 +17,7 @@ const strip = Ramda.replace(/[@:]/g, "")
 export const renderClassName = Ramda.compose(
   Ramda.join("--"),
   Ramda.map(strip),
-  Ramda.reject(Ramda.isNil)
+  Ramda.reject(Ramda.not)
 )
 
 
@@ -144,13 +144,13 @@ export const styleGetter = ({name, rules, media, pseudo}) => (...args) => {
   const [rule, arg] = args
 
   // This is a convenience for being able to call the getter function with
-  // arguments but without generating no output.
-  // This is useful when passing props directly
-  if (rule === null) return null
+  // arguments but without generating output.
+  if (!rule) return null
 
   if (process.env.NODE_ENV !== "production") {
     if (!Ramda.find(Ramda.propEq(0, rule), rules)) {
-      return console.error(`Couldn't find '${rule}' rule for '${name}' definition. Available rules are: ${rules.map(([ruleName]) => ruleName).join(", ")}`)
+      console.error(`Couldn't find '${rule}' rule for '${name}' definition. Available rules are: ${rules.map(([ruleName]) => ruleName).join(", ")}`)
+      return null
     }
 
     if (arg) {
@@ -159,19 +159,23 @@ export const styleGetter = ({name, rules, media, pseudo}) => (...args) => {
 
       if (isMedia) {
         if (!media) {
-          return console.error(`You're trying to access '${media}' media query for '${name}' definition, but the definition doesn't include any 'media' property at all. Try checking your funcss definitions for errors.`)
+          console.error(`You're trying to access '${media}' media query for '${name}' definition, but the definition doesn't include any 'media' property at all. Try checking your funcss definitions for errors.`)
+          return null
         }
         if (!Ramda.find(Ramda.propEq(0, arg), media)) {
-          return console.error(`Couldn't find '${media}' media query for '${name}' definition. Available media queries are: ${media.map(([mediaName]) => mediaName).join(", ")}`)
+          console.error(`Couldn't find '${media}' media query for '${name}' definition. Available media queries are: ${media.map(([mediaName]) => mediaName).join(", ")}`)
+          return null
         }
       }
 
       if (isPseudo) {
         if (!pseudo) {
-          return console.error(`You're trying to access '${pseudo}' pseudo class/element for '${name}' definition, but the definition doesn't include any 'pseudo' property at all. Try checking your funcss definitions for errors.`)
+          console.error(`You're trying to access '${pseudo}' pseudo class/element for '${name}' definition, but the definition doesn't include any 'pseudo' property at all. Try checking your funcss definitions for errors.`)
+          return null
         }
         if (!Ramda.find(Ramda.equals(arg), pseudo)) {
-          return console.error(`Couldn't find '${pseudo}' psedo class/element for '${name}' definition. Available media queries are: ${pseudo.join(", ")}`)
+          console.error(`Couldn't find '${pseudo}' psedo class/element for '${name}' definition. Available media queries are: ${pseudo.join(", ")}`)
+          return null
         }
       }
     }
