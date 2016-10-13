@@ -141,28 +141,38 @@ export const camelCase = (string) =>
  */
 
 export const styleGetter = ({name, rules, media, pseudo}) => (...args) => {
-  const [key, arg] = args
+  const [rule, arg] = args
 
   // This is a convenience for being able to call the getter function with
   // arguments but without generating no output.
   // This is useful when passing props directly
-  if (key === null) return null
+  if (rule === null) return null
 
   if (process.env.NODE_ENV !== "production") {
-    if (!Ramda.find(Ramda.propEq(0, key), rules)) {
-      return console.error(`Couldn't find '${key}' key for '${name}' definition.`)
+    if (!Ramda.find(Ramda.propEq(0, rule), rules)) {
+      return console.error(`Couldn't find '${rule}' rule for '${name}' definition. Available rules are: ${rules.map(([ruleName]) => ruleName).join(", ")}`)
     }
 
     if (arg) {
       const isPseudo = arg.startsWith(":")
       const isMedia = arg.startsWith("@")
 
-      if (isMedia && !Ramda.find(Ramda.propEq(0, arg), media)) {
-        return console.error(`Couldn't find '${media}' media query for '${name}' definition.`)
+      if (isMedia) {
+        if (!media) {
+          return console.error(`You're trying to access '${media}' media query for '${name}' definition, but the definition doesn't include any 'media' property at all. Try checking your funcss definitions for errors.`)
+        }
+        if (!Ramda.find(Ramda.propEq(0, arg), media)) {
+          return console.error(`Couldn't find '${media}' media query for '${name}' definition. Available media queries are: ${media.map(([mediaName]) => mediaName).join(", ")}`)
+        }
       }
 
-      if (isPseudo && !Ramda.find(Ramda.equals(arg), pseudo)) {
-        return console.error(`Couldn't find '${pseudo}' psedo class/element for '${name}' definition.`)
+      if (isPseudo) {
+        if (!pseudo) {
+          return console.error(`You're trying to access '${pseudo}' pseudo class/element for '${name}' definition, but the definition doesn't include any 'pseudo' property at all. Try checking your funcss definitions for errors.`)
+        }
+        if (!Ramda.find(Ramda.equals(arg), pseudo)) {
+          return console.error(`Couldn't find '${pseudo}' psedo class/element for '${name}' definition. Available media queries are: ${pseudo.join(", ")}`)
+        }
       }
     }
 
