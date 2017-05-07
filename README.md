@@ -1,5 +1,8 @@
-# Functional Style Sheets
+# [DEPRECATED] Functional Style Sheets
 
+**This package is no longer maintained, because there are way better styling solutions out there. For a package with similar benefits (atomic class names, media queries, pseudo classes, etc...), but significantly better ergonomics, see [`fela`](https://fela.js.org) and [`fela-components`](https://github.com/arturmuller/fela-components).**
+
+---
 [![npm](https://img.shields.io/npm/v/funcss.svg?maxAge=2592000)](https://www.npmjs.com/package/funcss)
 
 Functional Style Sheets let you easily generate functional CSS — similar to [Tachyons](http://tachyons.io) or [Basscss](http://basscss.com) — based a custom definitions you provide to it.
